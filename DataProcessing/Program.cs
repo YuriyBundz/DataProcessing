@@ -19,8 +19,8 @@ Config.WritePath = config["WritePath"];
 
 FileProcessor watcher = new FileProcessor();
 
-Thread beholdThread = new Thread(new ParameterizedThreadStart(watcher.Run));
-
+Thread fileProcessorThread = new Thread(new ParameterizedThreadStart(watcher.Run));
+Thread timeThrad = new Thread(watcher.TimeTracker);
 Console.WriteLine("Write: start");
 
 do
@@ -28,11 +28,13 @@ do
     string command = Console.ReadLine();
     if (command == "start")
     {
-        beholdThread.Start(Config.ReadPath);
+        timeThrad.Start();
+        fileProcessorThread.Start(Config.ReadPath);
     }
     if (command == "stop")
     {
         watcher.SaveMeta();
+        watcher.StopTimeTracker = true;
         break;
     }
 } while (true);

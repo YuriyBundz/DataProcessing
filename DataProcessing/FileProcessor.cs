@@ -16,9 +16,28 @@ namespace DataProcessing
     public class FileProcessor
     {
         FileManager fileManager = new FileManager();
+
+        public bool StopTimeTracker { get; set; } = false;
+
         private Meta meta = new Meta();
 
-        //c# timmer
+        private int currentHour = DateTime.Now.Hour;
+        private int currentMinute = DateTime.Now.Minute;
+
+        public void TimeTracker()
+        {
+            while (!StopTimeTracker)
+            {
+                if (currentHour == 0 && currentMinute == 0)
+                {
+                    SaveMeta();
+                    Thread.Sleep(60000);
+                }
+                currentHour = DateTime.Now.Hour;
+                currentMinute = DateTime.Now.Minute;
+            }
+
+        }
 
         public void SaveMeta()
         {
@@ -35,6 +54,7 @@ namespace DataProcessing
             {
                 if (IsFileMatchingFilter(file))
                 {
+                    Console.WriteLine(file);
                     fileManager.ReadFile(file, meta);
                 }
                 else
@@ -42,7 +62,7 @@ namespace DataProcessing
                     meta.Invalid_files.Add(file);
                 }
             }
-            
+
             FileSystemWatcher watcher = new FileSystemWatcher(path);
             watcher.Filter = "*.*";
             watcher.NotifyFilter = NotifyFilters.Attributes

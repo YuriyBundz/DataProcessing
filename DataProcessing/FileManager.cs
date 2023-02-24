@@ -26,11 +26,6 @@ namespace DataProcessing
             foreach (string line in System.IO.File.ReadLines(source).Skip(skip))
             {
                 String[] split = Regex.Split(line, ", ");
-                for (int i = 0; i < split.Length; i++)
-                {
-                    Console.WriteLine(split[i]);
-                }
-                Console.WriteLine("____");
                 try
                 {
                     string city = split[2].Substring(1);

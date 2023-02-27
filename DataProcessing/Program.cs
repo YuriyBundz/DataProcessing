@@ -19,22 +19,27 @@ Config.WritePath = config["WritePath"];
 
 FileProcessor watcher = new FileProcessor();
 
-Thread fileProcessorThread = new Thread(new ParameterizedThreadStart(watcher.Run));
-Thread timeThrad = new Thread(watcher.TimeTracker);
-Console.WriteLine("Write: start");
+CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
+CancellationToken cancellationToken = cancellationTokenSource.Token;
+
+Console.WriteLine("Write: \nstart to Start\nreset to Reset\nstop to Stop");
 
 do
 {
     string command = Console.ReadLine();
-    if (command == "start")
+    if (command == Commands.Start)
     {
-        timeThrad.Start();
-        fileProcessorThread.Start(Config.ReadPath);
+        Task runTask = Task.Factory.StartNew(() => watcher.Run());
     }
-    if (command == "stop")
+    if (command == Commands.Reset)
+    {
+        watcher.Reset();
+        cancellationTokenSource.Cancel();
+    }
+    if (command == Commands.Stop)
     {
         watcher.SaveMeta();
-        watcher.StopTimeTracker = true;
+        cancellationTokenSource.Cancel();
         break;
     }
 } while (true);

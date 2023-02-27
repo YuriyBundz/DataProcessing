@@ -16,6 +16,6 @@ namespace DataProcessing
         [JsonPropertyName("date")]
         public DateTime Date { get; set; }
         [JsonPropertyName("account_number")]
-        public long Account_number { get; set; }
+        public long AccountNumber { get; set; }
     }
 }

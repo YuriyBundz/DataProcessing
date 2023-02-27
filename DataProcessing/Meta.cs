@@ -8,19 +8,19 @@ namespace DataProcessing
 {
     public class Meta
     {
-        public int Parsed_files { get; set; }
-        public int Parsed_lines { get; set; }
-        public int Found_errors { get; set; }
-        public List<String> Invalid_files { get; set; } = new List<String>();
+        public int ParsedFiles { get; set; }
+        public int ParsedLines { get; set; }
+        public int FoundErrors { get; set; }
+        public List<String> InvalidFiles { get; set; } = new List<String>();
 
         public void SaveMetaLog()
         {
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("parsed_files: " + Parsed_files);
-            sb.AppendLine("parsed_lines: " + Parsed_lines);
-            sb.AppendLine("found_errors: " + Found_errors);
+            sb.AppendLine("parsed_files: " + ParsedFiles);
+            sb.AppendLine("parsed_lines: " + ParsedLines);
+            sb.AppendLine("found_errors: " + FoundErrors);
             sb.Append("invalid_files: [");
-            sb.Append(string.Join(", ", Invalid_files));
+            sb.Append(string.Join(", ", InvalidFiles));
             sb.Append("]");
 
             string folderC = DateTime.Now.ToString("MM/dd/yyyy");

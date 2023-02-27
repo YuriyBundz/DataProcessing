@@ -10,60 +10,50 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Schema;
 using System.Security.Cryptography.X509Certificates;
+using System.Timers;
+using Timer = System.Timers.Timer;
 
 namespace DataProcessing
 {
     public class FileProcessor
     {
-        FileManager fileManager = new FileManager();
+        FileParser fileManager = new FileParser();
+        private static Timer _timer;
+        Meta meta = new Meta();
+        Reset reset = new Reset();
 
-        public bool StopTimeTracker { get; set; } = false;
-
-        private Meta meta = new Meta();
-
-        private int currentHour = DateTime.Now.Hour;
-        private int currentMinute = DateTime.Now.Minute;
-
-        public void TimeTracker()
+        private void OnTimedEvent(object source, ElapsedEventArgs e)
         {
-            while (!StopTimeTracker)
+            if (DateTime.Now.TimeOfDay == new TimeSpan(0, 0, 0))
             {
-                if (currentHour == 0 && currentMinute == 0)
-                {
-                    SaveMeta();
-                    Thread.Sleep(60000);
-                }
-                currentHour = DateTime.Now.Hour;
-                currentMinute = DateTime.Now.Minute;
+                meta.SaveMetaLog();
+                meta = new Meta();
+                reset = new Reset();
             }
-
         }
 
-        public void SaveMeta()
+        public void Run()
         {
-            meta.SaveMetaLog();
-        }
+            _timer = new Timer(1000);
+            _timer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
+            _timer.Enabled = true;
 
-        public void Run(object parameter)
-        {
-            string path = (string)parameter;
-
-            string[] files = Directory.GetFiles(path);
+            string[] files = Directory.GetFiles(Config.ReadPath);
 
             foreach (string file in files)
             {
                 if (IsFileMatchingFilter(file))
                 {
                     Console.WriteLine(file);
-                    fileManager.ReadFile(file, meta);
+                    Process(file);
                 }
                 else
                 {
-                    meta.Invalid_files.Add(file);
+                    meta.InvalidFiles.Add(file);
                 }
             }
 
-            FileSystemWatcher watcher = new FileSystemWatcher(path);
+            FileSystemWatcher watcher = new FileSystemWatcher(Config.ReadPath);
             watcher.Filter = "*.*";
             watcher.NotifyFilter = NotifyFilters.Attributes
                              | NotifyFilters.CreationTime
@@ -81,6 +71,18 @@ namespace DataProcessing
             watcher.EnableRaisingEvents = true;
 
         }
+        public void SaveMeta()
+        {
+            meta.SaveMetaLog();
+        }
+        public void Reset()
+        {
+            foreach (var item in reset.CreatedFiles)
+            {
+                File.Delete(item);
+            }
+            meta = new Meta();
+        }
         private void OnChanged(object sender, FileSystemEventArgs e)
         {
             if (e.ChangeType != WatcherChangeTypes.Changed)
@@ -90,11 +92,11 @@ namespace DataProcessing
             if (IsFileMatchingFilter(e.FullPath))
             {
                 Console.WriteLine($"Changed: {e.FullPath}");
-                fileManager.ReadFile(e.FullPath, meta);
+                Process(e.FullPath);
             }
             else
             {
-                meta.Invalid_files.Add(e.FullPath);
+                meta.InvalidFiles.Add(e.FullPath);
             }
         }
 
@@ -104,11 +106,11 @@ namespace DataProcessing
             {
                 string value = $"Created: {e.FullPath}";
                 Console.WriteLine(value);
-                fileManager.ReadFile(e.FullPath, meta);
+                Process(e.FullPath);
             }
             else
             {
-                meta.Invalid_files.Add(e.FullPath);
+                meta.InvalidFiles.Add(e.FullPath);
             }
         }
 
@@ -137,6 +139,16 @@ namespace DataProcessing
         {
             string fileName = Path.GetFileName(fullPath);
             return fileName.EndsWith(".txt") || fileName.EndsWith(".csv");
+        }
+        private void Process(string fullPath)
+        {
+            ParsingResult readFile = fileManager.Parse(fullPath);
+            meta.ParsedLines += readFile.ParsedLines;
+            meta.FoundErrors += readFile.FoundErrors;
+            meta.ParsedFiles += readFile.ParsedFiles;
+            IEnumerable<CitySummary> citySummary = Mapper.MapToCitySummary(readFile.CustomerList);
+            string filePath = (SaveFile.SaveToFile(citySummary));
+            reset.CreatedFiles.Add(filePath);
         }
     }
 }
